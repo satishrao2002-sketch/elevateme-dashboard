@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ElevateMe · Performance & Incentive Portal</title>
+  <!-- Tailwind + Fonts + Chart.js -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * { font-family: 'Nunito Sans', 'Arial', sans-serif; }
+    body { background: #F2F1EE; }
+    .transition-smooth { transition: all 0.2s ease; }
+    .card-hover:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(0,0,0,0.05); }
+    .badge-gold { background: linear-gradient(135deg, #FFD700, #F9A825); color: #3E2A00; }
+    .badge-silver { background: linear-gradient(135deg, #E0E0E0, #BDBDBD); color: #2C2C2C; }
+    .badge-bronze { background: linear-gradient(135deg, #CD7F32, #A5622E); color: white; }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    /* custom progress */
+    .progress-fill-animate { transition: width 0.6s ease; }
+  </style>
+</head>
+<body class="antialiased">
+
+<div class="max-w-[1600px] mx-auto px-4 md:px-6 py-5">
+  <!-- HEADER with Logo & Brand -->
+  <div class="flex flex-wrap justify-between items-center gap-4 mb-6 pb-2 border-b border-[#C2C2C2]">
+    <div class="flex items-center gap-2">
+      <span class="text-3xl font-extrabold text-[#1A1A1A]">Elevate<span class="text-[#488A6D]"><i class="fas fa-arrow-up"></i></span></span>
+      <span class="text-3xl font-extrabold text-[#C7493A]">Me</span>
+      <span class="ml-3 text-sm font-bold uppercase tracking-wider bg-[#C7493A]/10 text-[#C7493A] px-3 py-1 rounded-full">Incentive OS</span>
+    </div>
+    <div class="flex gap-3">
+      <select id="globalRoleFilter" class="bg-white border border-[#C2C2C2] rounded-full px-4 py-2 text-sm font-bold">
+        <option value="builders">👷 Builders</option>
+        <option value="closers">🎓 Closers</option>
+        <option value="bd">🤝 BD Team</option>
+        <option value="leaders">🏆 Team Leaders</option>
+      </select>
+      <button id="darkToggle" class="bg-white border border-[#C2C2C2] rounded-full px-4 py-2 text-sm font-bold"><i class="fas fa-moon"></i> Mode</button>
+    </div>
+  </div>
+
+  <!-- ACTIVE CAMPAIGNS (Landing Style) -->
+  <div class="mb-8">
+    <h2 class="text-2xl font-extrabold text-[#1A1A1A] mb-3 flex items-center gap-2"><i class="fas fa-rocket text-[#C7493A]"></i> Active Campaigns</h2>
+    <div id="campaignGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5"></div>
+  </div>
+
+  <!-- ROLE DASHBOARD (DYNAMIC) -->
+  <div class="mb-10">
+    <div class="flex justify-between items-center flex-wrap gap-3 mb-4">
+      <h2 id="roleDashboardTitle" class="text-2xl font-extrabold text-[#1A1A1A]">👷 Builder Leaderboard & Incentives</h2>
+      <button id="refreshDataBtn" class="bg-[#488A6D] text-white px-5 py-2 rounded-full text-sm font-bold shadow-sm"><i class="fas fa-sync-alt"></i> Refresh Data</button>
+    </div>
+    <!-- LEADERBOARD TABLE -->
+    <div class="bg-white rounded-2xl border border-[#C2C2C2] overflow-x-auto shadow-sm mb-8">
+      <table class="min-w-full text-sm">
+        <thead class="bg-[#F9F8F5] text-[#1A1A1A] font-extrabold uppercase text-xs tracking-wider">
+          <tr><th class="px-5 py-4">Rank</th><th>Name</th><th>Team</th><th id="col1Header">Qualified Leads</th><th id="col2Header">Presentations</th><th id="col3Header">Revenue</th><th>Achievement %</th><th>Incentive Earned</th><th>Badge</th></tr>
+        </thead>
+        <tbody id="leaderboardTableBody"></tbody>
+      </table>
+    </div>
+
+    <!-- KPI PROGRESS GRID & ANALYTICS -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+      <div class="lg:col-span-2 bg-white rounded-2xl border border-[#C2C2C2] p-5">
+        <h3 class="font-extrabold text-lg mb-3"><i class="fas fa-chart-line text-[#488A6D]"></i> Department Performance Trend</h3>
+        <canvas id="performanceChart" height="180"></canvas>
+      </div>
+      <div class="bg-white rounded-2xl border border-[#C2C2C2] p-5">
+        <h3 class="font-extrabold text-lg mb-2">🏅 Hall of Fame Spotlight</h3>
+        <div id="hallOfFameWidget" class="space-y-3"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN PANEL (Collapsible demo + mock upload) -->
+  <div class="bg-white rounded-2xl border border-[#C2C2C2] p-5 mt-6 shadow-sm">
+    <div class="flex justify-between items-center cursor-pointer" id="adminToggleBtn">
+      <h3 class="font-extrabold text-xl text-[#1A1A1A]"><i class="fas fa-lock text-[#C7493A]"></i> Admin Control Panel</h3>
+      <i class="fas fa-chevron-down transition-transform" id="adminChevron"></i>
+    </div>
+    <div id="adminPanelContent" class="hidden mt-5 border-t pt-5">
+      <div class="grid md:grid-cols-2 gap-6">
+        <div>
+          <label class="font-bold text-sm">Upload Data (CSV / JSON mock)</label>
+          <input type="file" id="dataUploader" accept=".csv, .json" class="mt-1 border rounded-lg p-2 w-full">
+          <p class="text-xs text-gray-500 mt-1">Accepts CSV with columns: name,team,qualifiedLeads,presentations,revenue,enrollments,leadsGenerated</p>
+          <button id="processUploadBtn" class="mt-3 bg-[#C7493A] text-white px-4 py-2 rounded-full text-sm font-bold">Update System</button>
+        </div>
+        <div>
+          <label class="font-bold text-sm">Incentive Scheme Override (JSON)</label>
+          <textarea id="incentiveSchemeJson" rows="3" class="w-full border rounded-lg p-2 text-sm" placeholder='{"builders":{"perLead":50,"perPresentation":120},"closers":{"perEnrollment":800,"revenueShare":0.02}}'></textarea>
+          <button id="applyIncentiveBtn" class="mt-2 bg-[#488A6D] text-white px-4 py-2 rounded-full text-sm font-bold">Apply Scheme</button>
+        </div>
+      </div>
+      <div class="text-xs text-gray-400 mt-4">* Real-time recalculation: Leaderboard, Incentives, Hall of Fame update instantly.</div>
+    </div>
+  </div>
+
+  <!-- EXPORT BUTTONS -->
+  <div class="flex flex-wrap justify-end gap-3 mt-6">
+    <button id="exportLeaderboardBtn" class="border border-[#C2C2C2] bg-white rounded-full px-4 py-2 text-sm font-bold"><i class="fas fa-download"></i> Export CSV</button>
+    <button id="exportReportBtn" class="bg-[#1A1A1A] text-white rounded-full px-5 py-2 text-sm font-bold"><i class="fas fa-file-pdf"></i> Weekly Summary PDF</button>
+  </div>
+</div>
+
+<script>
+  // ---------- MOCK DATASETS (Builder, Closer, BD, Leaders) each with own KPIs and incentive logic ----------
+  let globalDataset = {
+    builders: [
+      { id:1, name:"Nishant Sharma", team:"Team Mamta", qualifiedLeads:28, presentations:12, revenue:0, enrollments:0, leadsGenerated:0, baseTarget:20 },
+      { id:2, name:"Yashraj Modasara", team:"Team Soham", qualifiedLeads:42, presentations:18, revenue:0, enrollments:0, leadsGenerated:0, baseTarget:20 },
+      { id:3, name:"Avni Gajjar", team:"Team Soham", qualifiedLeads:35, presentations:14, revenue:0, enrollments:0, leadsGenerated:0, baseTarget:20 },
+      { id:4, name:"Nupur Vyas", team:"Team Tejasvi", qualifiedLeads:31, presentations:11, revenue:0, enrollments:0, leadsGenerated:0, baseTarget:20 },
+      { id:5, name:"Meet Patel", team:"Team Mamta", qualifiedLeads:18, presentations:7, revenue:0, enrollments:0, leadsGenerated:0, baseTarget:20 },
+      { id:6, name:"Maharshi Patel", team:"Team Soham", qualifiedLeads:39, presentations:16, revenue:0, enrollments:0, leadsGenerated:0, baseTarget:20 },
+    ],
+    closers: [
+      { id:7, name:"Rohit Mehta", team:"Closing Crew A", presentations:24, enrollments:12, revenue:1850000, qualifiedLeads:0, baseTargetEnroll:8 },
+      { id:8, name:"Simran Kaur", team:"Closing Crew B", presentations:32, enrollments:18, revenue:2850000, qualifiedLeads:0, baseTargetEnroll:8 },
+      { id:9, name:"Karan Malhotra", team:"Closing Crew A", presentations:19, enrollments:9, revenue:1320000, qualifiedLeads:0, baseTargetEnroll:8 },
+    ],
+    bd: [
+      { id:10, name:"Anjali Sharma", team:"BD North", leadsGenerated:540, qualifiedLeads:210, costEfficiency:0.8, baseTargetLeads:400 },
+      { id:11, name:"Vikram Singh", team:"BD South", leadsGenerated:710, qualifiedLeads:305, costEfficiency:0.75, baseTargetLeads:400 },
+      { id:12, name:"Priya Nair", team:"BD West", leadsGenerated:490, qualifiedLeads:198, costEfficiency:0.85, baseTargetLeads:400 },
+    ],
+    leaders: [
+      { id:13, name:"Mamta Rao", team:"Team Mamta", teamAchievement:112, teamRevenue:3200000, teamConversion:24, productivityScore:88, baseAchievement:100 },
+      { id:14, name:"Soham Desai", team:"Team Soham", teamAchievement:148, teamRevenue:4950000, teamConversion:31, productivityScore:94, baseAchievement:100 },
+      { id:15, name:"Tejasvi Patil", team:"Team Tejasvi", teamAchievement:106, teamRevenue:2780000, teamConversion:22, productivityScore:79, baseAchievement:100 },
+    ]
+  };
+
+  // Incentive rules per role (adjustable via admin)
+  let incentiveRules = {
+    builders: { perLead: 45, perPresentation: 120, dailyBonusThreshold: 20, weeklyBonus: 500 },
+    closers: { perEnrollment: 950, revenueShare: 0.018, baseBonus: 2000 },
+    bd: { perQualifiedLead: 35, perLeadGen: 5, targetBonus: 1500 },
+    leaders: { teamAchievementMultiplier: 75, revenueBonus: 0.008 }
+  };
+
+  let currentRole = "builders";
+  let performanceChartInstance = null;
+
+  // Helper: Compute incentives based on role & data
+  function computeIncentive(employee, role) {
+    if(role === 'builders') {
+      let leadAmt = (employee.qualifiedLeads || 0) * incentiveRules.builders.perLead;
+      let presAmt = (employee.presentations || 0) * incentiveRules.builders.perPresentation;
+      let extra = (employee.qualifiedLeads >= 25) ? 500 : 0;
+      return leadAmt + presAmt + extra;
+    }
+    if(role === 'closers') {
+      let enrollBonus = (employee.enrollments || 0) * incentiveRules.closers.perEnrollment;
+      let revShare = (employee.revenue || 0) * incentiveRules.closers.revenueShare;
+      return enrollBonus + revShare + (employee.enrollments >=10 ? 1200 : 0);
+    }
+    if(role === 'bd') {
+      let qualifiedBonus = (employee.qualifiedLeads || 0) * incentiveRules.bd.perQualifiedLead;
+      let leadBonus = (employee.leadsGenerated || 0) * incentiveRules.bd.perLeadGen;
+      let targetExtra = (employee.qualifiedLeads >= 250) ? 1800 : 0;
+      return qualifiedBonus + leadBonus + targetExtra;
+    }
+    if(role === 'leaders') {
+      let teamPerf = (employee.teamAchievement / 100) * incentiveRules.leaders.teamAchievementMultiplier;
+      let revenuePart = (employee.teamRevenue || 0) * incentiveRules.leaders.revenueBonus;
+      return Math.round(teamPerf * 120 + revenuePart);
+    }
+    return 0;
+  }
+
+  function computeAchievement(emp, role) {
+    if(role === 'builders') return Math.min(180, Math.round(((emp.qualifiedLeads+emp.presentations*1.5) / 25) * 100));
+    if(role === 'closers') return Math.min(200, Math.round(((emp.enrollments) / (emp.baseTargetEnroll||8)) * 100));
+    if(role === 'bd') return Math.min(200, Math.round((emp.qualifiedLeads / (emp.baseTargetLeads||400)) * 100));
+    if(role === 'leaders') return Math.min(200, Math.round((emp.teamAchievement)));
+    return 70;
+  }
+
+  function getBadge(rank, achievement) {
+    if(rank === 0) return '<span class="badge-gold text-xs px-2 py-1 rounded-full font-bold"><i class="fas fa-crown"></i> Gold</span>';
+    if(rank === 1) return '<span class="badge-silver text-xs px-2 py-1 rounded-full font-bold"><i class="fas fa-medal"></i> Silver</span>';
+    if(rank === 2) return '<span class="badge-bronze text-xs px-2 py-1 rounded-full font-bold"><i class="fas fa-medal"></i> Bronze</span>';
+    if(achievement >= 130) return '<span class="bg-[#88D8B0] text-[#1A4D2E] text-xs px-2 py-1 rounded-full"><i class="fas fa-rocket"></i> Over Achiever</span>';
+    return '<span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full"><i class="fas fa-chart-line"></i> Performer</span>';
+  }
+
+  function renderLeaderboard() {
+    let data = [...globalDataset[currentRole]];
+    let sortKey = currentRole === 'builders' ? 'qualifiedLeads' : (currentRole === 'closers' ? 'enrollments' : (currentRole === 'bd' ? 'qualifiedLeads' : 'teamAchievement'));
+    data.sort((a,b) => (b[sortKey]||0) - (a[sortKey]||0));
+    const tbody = document.getElementById('leaderboardTableBody');
+    const col1Header = document.getElementById('col1Header');
+    const col2Header = document.getElementById('col2Header');
+    const col3Header = document.getElementById('col3Header');
+    if(currentRole === 'builders') { col1Header.innerText = 'Qualified Leads'; col2Header.innerText = 'Presentations'; col3Header.innerText = 'Revenue'; }
+    if(currentRole === 'closers') { col1Header.innerText = 'Presentations'; col2Header.innerText = 'Enrollments'; col3Header.innerText = 'Revenue (₹)'; }
+    if(currentRole === 'bd') { col1Header.innerText = 'Leads Gen.'; col2Header.innerText = 'Qualified Leads'; col3Header.innerText = 'Quality Score'; }
+    if(currentRole === 'leaders') { col1Header.innerText = 'Team Achiev%'; col2Header.innerText = 'Team Revenue'; col3Header.innerText = 'Conversion %'; }
+    
+    tbody.innerHTML = '';
+    data.forEach((emp, idx) => {
+      let incentive = computeIncentive(emp, currentRole);
+      let achievement = computeAchievement(emp, currentRole);
+      let row = `<tr class="border-b hover:bg-gray-50">
+        <td class="px-5 py-3 font-extrabold">${idx+1} ${idx===0?'🥇':idx===1?'🥈':idx===2?'🥉':''}</td>
+        <td class="px-5 py-3 font-bold">${emp.name}</td>
+        <td class="px-5 py-3 text-gray-600">${emp.team}</td>`;
+      if(currentRole === 'builders') row += `<td class="px-5 py-3">${emp.qualifiedLeads}</td><td>${emp.presentations}</td><td>₹${(emp.revenue||0).toLocaleString()}</td>`;
+      if(currentRole === 'closers') row += `<td>${emp.presentations}</td><td>${emp.enrollments}</td><td>₹${(emp.revenue).toLocaleString()}</td>`;
+      if(currentRole === 'bd') row += `<td>${emp.leadsGenerated}</td><td>${emp.qualifiedLeads}</td><td>${((emp.qualifiedLeads/emp.leadsGenerated)*100).toFixed(1)}%</td>`;
+      if(currentRole === 'leaders') row += `<td>${emp.teamAchievement}%</td><td>₹${(emp.teamRevenue).toLocaleString()}</td><td>${emp.teamConversion}%</td>`;
+      row += `<td class="font-bold">${achievement}%</td>
+              <td class="text-[#C7493A] font-extrabold">₹${incentive.toLocaleString()}</td>
+              <td>${getBadge(idx, achievement)}</td></tr>`;
+      tbody.insertAdjacentHTML('beforeend', row);
+    });
+    updateHallOfFameSpotlight(data);
+    updateCharts(data);
+  }
+
+  function updateHallOfFameSpotlight(leaderboardData) {
+    const container = document.getElementById('hallOfFameWidget');
+    if(!leaderboardData.length) return;
+    const top = leaderboardData[0];
+    const highestRevenue = [...leaderboardData].sort((a,b)=> (b.revenue||b.teamRevenue||0) - (a.revenue||a.teamRevenue||0))[0];
+    container.innerHTML = `
+      <div class="bg-[#F2F1EE] p-3 rounded-xl"><i class="fas fa-trophy text-[#C7493A]"></i> <span class="font-bold">🏆 Employee of the Day:</span> ${top.name} (${top.team})</div>
+      <div class="bg-[#F2F1EE] p-3 rounded-xl"><i class="fas fa-chart-line text-[#488A6D]"></i> <span class="font-bold">🔥 Highest Revenue:</span> ${highestRevenue.name} — ₹${(highestRevenue.revenue || highestRevenue.teamRevenue || 0).toLocaleString()}</div>
+      <div class="flex gap-2 text-sm"><span class="bg-[#FFD475] px-2 rounded-full">⭐ Star Performer</span> <span>🚀 Over Achiever: ${leaderboardData.find(e=>computeAchievement(e,currentRole)>=150)?.name || top.name}</span></div>
+    `;
+  }
+
+  function updateCharts(data) {
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+    const labels = data.slice(0,5).map(d=>d.name);
+    const incentiveVals = data.slice(0,5).map(d=>computeIncentive(d, currentRole));
+    if(performanceChartInstance) performanceChartInstance.destroy();
+    performanceChartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets: [{ label: 'Incentive Earned (₹)', data: incentiveVals, backgroundColor: '#C7493A', borderRadius: 8 }] },
+      options: { responsive: true, maintainAspectRatio: true }
+    });
+  }
+
+  function renderActiveCampaigns() {
+    const campaigns = [
+      { name:"Builder Championship", status:"Active", daysLeft:4, prize:"₹28,500", participants:24, progress:78 },
+      { name:"Closer Revenue Sprint", status:"Active", daysLeft:6, prize:"₹42,000", participants:12, progress:64 },
+      { name:"BD Growth League", status:"Active", daysLeft:3, prize:"₹18,000", participants:8, progress:92 },
+      { name:"Leadership Excellence", status:"Upcoming", daysLeft:10, prize:"₹35,000", participants:5, progress:0 }
+    ];
+    const grid = document.getElementById('campaignGrid');
+    grid.innerHTML = campaigns.map(c => `<div class="bg-white rounded-xl border border-[#C2C2C2] p-4 shadow-sm card-hover transition-smooth"><div class="flex justify-between"><span class="font-extrabold">${c.name}</span><span class="text-xs bg-green-100 text-green-700 px-2 rounded-full">${c.status}</span></div><div class="mt-2 text-sm">⏳ ${c.daysLeft} days left &nbsp;🏆 Prize: ${c.prize}</div><div class="mt-2 text-xs">👥 ${c.participants} participants</div><div class="w-full bg-gray-200 rounded-full h-2 mt-2"><div class="bg-[#488A6D] h-2 rounded-full" style="width:${c.progress}%"></div></div></div>`).join('');
+  }
+
+  // Admin: handle CSV upload mock
+  function processUpload(file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const content = e.target.result;
+      const rows = content.split('\n').slice(1);
+      rows.forEach(row => {
+        if(row.trim()) {
+          const cols = row.split(',');
+          if(cols.length>=3 && currentRole==='builders') {
+            let name = cols[0];
+            let qualified = parseInt(cols[1]) || 0;
+            let presentations = parseInt(cols[2]) || 0;
+            let existing = globalDataset.builders.find(b=>b.name===name);
+            if(existing) { existing.qualifiedLeads = qualified; existing.presentations = presentations; }
+            else globalDataset.builders.push({ id: Date.now(), name, team:"General", qualifiedLeads:qualified, presentations, revenue:0, enrollments:0, leadsGenerated:0, baseTarget:20 });
+          }
+        }
+      });
+      refreshAllUI();
+      alert("Data updated dynamically!");
+    };
+    reader.readAsText(file);
+  }
+
+  function refreshAllUI() {
+    document.getElementById('roleDashboardTitle').innerHTML = currentRole === 'builders' ? '👷 Builder Leaderboard & Incentives' : (currentRole === 'closers' ? '🎓 Closer Revenue Leaderboard' : (currentRole === 'bd' ? '🤝 BD Lead Generation' : '🏆 Team Leaders Performance'));
+    renderLeaderboard();
+    renderActiveCampaigns();
+  }
+
+  // Export CSV
+  function exportCSV() {
+    let data = globalDataset[currentRole];
+    let headers = ['Name','Team','Primary KPI','Secondary','Incentive'];
+    let rows = data.map(e => [e.name, e.team, e.qualifiedLeads || e.enrollments || e.leadsGenerated || e.teamAchievement, e.presentations || e.revenue || e.qualifiedLeads, computeIncentive(e, currentRole)]);
+    let csv = [headers, ...rows].map(row => row.join(',')).join('\n');
+    const blob = new Blob([csv], {type: 'text/csv'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `elevateme_${currentRole}_leaderboard.csv`;
+    a.click();
+  }
+
+  function exportWeeklyPDF() { alert("📄 Weekly Performance Report generated (demo). In production, would include all KPIs, incentive liability and top performers."); }
+
+  // Event listeners & dark mode
+  document.getElementById('globalRoleFilter').addEventListener('change', (e) => { currentRole = e.target.value; refreshAllUI(); });
+  document.getElementById('refreshDataBtn').addEventListener('click', () => refreshAllUI());
+  document.getElementById('exportLeaderboardBtn').addEventListener('click', exportCSV);
+  document.getElementById('exportReportBtn').addEventListener('click', exportWeeklyPDF);
+  document.getElementById('processUploadBtn').addEventListener('click', () => { const fileInput = document.getElementById('dataUploader'); if(fileInput.files.length) processUpload(fileInput.files[0]); else alert("Select CSV first"); });
+  document.getElementById('applyIncentiveBtn').addEventListener('click', () => { try { const newRules = JSON.parse(document.getElementById('incentiveSchemeJson').value); Object.assign(incentiveRules, newRules); refreshAllUI(); alert("Incentive scheme updated!"); } catch(e) { alert("Invalid JSON"); } });
+  const adminPanel = document.getElementById('adminPanelContent');
+  const chevron = document.getElementById('adminChevron');
+  document.getElementById('adminToggleBtn').addEventListener('click', () => { adminPanel.classList.toggle('hidden'); chevron.classList.toggle('rotate-180'); });
+  document.getElementById('darkToggle').addEventListener('click', () => { document.body.classList.toggle('bg-[#121212]'); document.body.classList.toggle('text-white'); const cards = document.querySelectorAll('.bg-white'); cards.forEach(c=>c.classList.toggle('bg-[#1E1E1E]')); });
+  
+  // initial load
+  renderActiveCampaigns();
+  refreshAllUI();
+</script>
+</body>
+</html>
